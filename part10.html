@@ -1,0 +1,243 @@
+<!doctype html> 
+<html lang="en"> 
+<head> 
+	<meta charset="UTF-8" />
+    <title>Phaser - Making your first game, part 9</title>
+	<script type="text/javascript" src="js/phaser.min.js"></script>
+    <script type="text/javascript">
+        function rs() {
+            document.getElementsByTagName("canvas")[0].style.margin = "auto";
+        }
+    </script>
+    <style type="text/css">
+        body {
+            margin: 0;
+        width:80%;
+        margin-left:auto;
+        margin-right:auto;
+        }
+    </style>
+</head>
+<body onload="javascript:rs();">
+<div>
+<script type="text/javascript">
+
+var game = new Phaser.Game(1000, 500, Phaser.CANVAS, 'phaser-example', { preload: preload, create: create, update: update, render: render });
+//var game = new Phaser.Game("100%", "100%", Phaser.CANVAS, 'phaser-example', { preload: preload, create: create, update: update, render: render });
+
+
+function preload() {
+
+    game.load.image('background','assets/background-01.png');
+
+    game.load.image('ground', 'assets/stone-red.png');
+    //game.load.image('ground', 'assets/platform.png');
+
+    game.load.spritesheet('player', 'assets/dude.png', 32, 48);
+}
+
+var platforms;
+var player;
+var cursors;
+
+function create() 
+{
+    game.add.tileSprite(0, 0, 1920, 1920, 'background');
+
+    game.world.setBounds(0, 0, 1920, 1920);
+
+    game.physics.startSystem(Phaser.Physics.P2JS);
+
+    //  Turn on impact events for the world, without this we get no collision callbacks
+    game.physics.p2.setImpactEvents(true);
+
+    //Collision groups
+
+        //  Create our collision groups. One for the player, one for the pandas
+        var playerCollisionGroup = game.physics.p2.createCollisionGroup();
+        var stoneCollisionGroup = game.physics.p2.createCollisionGroup();
+
+        //  This part is vital if you want the objects with their own collision groups to still collide with the world bounds
+        //  (which we do) - what this does is adjust the bounds to use its own collision group.
+        game.physics.p2.updateBoundsCollisionGroup();
+
+
+
+    //Create Platforms (Stones)
+
+
+        //The platforms group contains the ground and the 2 ledges we can jump on
+            platforms = game.add.group();
+
+            //  We will enable physics for any object that is created in this group
+            platforms.enableBody = true;
+
+            platforms.physicsBodyType = Phaser.Physics.P2JS;
+
+
+
+            //Collsion groups
+           //  Tell the stones to use the stoneCollisionGroup 
+            //platforms.body.setCollisionGroup(stoneCollisionGroup);
+
+
+
+            
+
+
+
+            // Here we create the ground.
+            var ground = platforms.create(300, 300, 'ground');
+
+
+            //  This stops it from falling away when you jump on it
+            ground.body.immovable = true;
+
+
+            ground.body.setCollisionGroup(stoneCollisionGroup);
+
+
+            ground.body.collides([stoneCollisionGroup, playerCollisionGroup]);
+
+
+            //  Now let's create two ledges
+            var ledge = platforms.create(game.world.centerX, game.world.centerY, 'ground');
+            ledge.body.immovable = true;
+           ledge.body.setCollisionGroup(stoneCollisionGroup);
+           ledge.body.collides([stoneCollisionGroup, playerCollisionGroup]);            
+
+            ledge = platforms.create(-150, 250, 'ground');
+            ledge.body.immovable = true;
+           ledge.body.setCollisionGroup(stoneCollisionGroup);
+           ledge.body.collides([stoneCollisionGroup, playerCollisionGroup]);            
+
+            ledge = platforms.create(-500, 250, 'ground');
+            ledge.body.immovable = true;
+                       ledge.body.setCollisionGroup(stoneCollisionGroup);
+           ledge.body.collides([stoneCollisionGroup, playerCollisionGroup]);
+
+            ledge = platforms.create(-800, 250, 'ground');
+            ledge.body.immovable = true;
+                       ledge.body.setCollisionGroup(stoneCollisionGroup);
+           ledge.body.collides([stoneCollisionGroup, playerCollisionGroup]);
+
+
+
+
+
+    //First Platforms than physics on player?
+
+    player = game.add.sprite(game.world.centerX, game.world.centerY, 'player');
+    
+    game.physics.p2.enable(player);
+
+
+    //TEST
+    //player.body.collideWorldBounds = true;
+
+    //  Our two animations, walking left and right.
+    player.animations.add('left', [0, 1, 2, 3], 10, true);
+    player.animations.add('right', [5, 6, 7, 8], 10, true);
+
+    player.body.fixedRotation = true;
+
+    //  Set the ships collision group
+    player.body.setCollisionGroup(playerCollisionGroup);
+
+    player.body.collides(stoneCollisionGroup, hitStone, this);
+
+
+    cursors = game.input.keyboard.createCursorKeys();
+
+    //  Notice that the sprite doesn't have any momentum at all,
+    //  it's all just set by the camera follow type.
+    //  0.1 is the amount of linear interpolation to use.
+    //  The smaller the value, the smooth the camera (and the longer it takes to catch up)
+    game.camera.follow(player, Phaser.Camera.FOLLOW_LOCKON, 0.1, 0.1);
+
+    //  Listen for this signal to reset once the fade is over
+    //game.camera.onFadeComplete.add(resetFade, this);
+
+    //game.input.onDown.add(fade, this);
+
+}
+
+function hitStone(body1, body2) {
+
+    //  body1 is the space ship (as it's the body that owns the callback)
+    //  body2 is the body it impacted with, in this case our panda
+    //  As body2 is a Phaser.Physics.P2.Body object, you access its own (the sprite) via the sprite property:
+    game.debug.text("Hit Stone!!!", 0, 0);
+
+}
+
+function fade() {
+
+    //  You can set your own fade color and duration
+    game.camera.fade(0x000000, 4000);
+
+}
+
+function resetFade() {
+
+    game.camera.resetFX();
+
+}
+
+function update() {
+
+
+    //  Collide the player with the platforms
+    //game.physics.p2.collide(player, platforms);
+
+    //panda.body.collides([pandaCollisionGroup, playerCollisionGroup]);
+
+    //  Checks to see if the player overlaps with any of the stars, if he does call the collectStar function
+    //game.physics.arcade.overlap(player, stars, collectStar, null, this);
+
+
+    player.body.setZeroVelocity();
+
+    if (cursors.up.isDown)
+    {
+        player.body.moveUp(300)
+        player.animations.play('left');
+    }
+    else if (cursors.down.isDown)
+    {
+        player.body.moveDown(300);
+        player.animations.play('left');
+    }
+
+    if (cursors.left.isDown)
+    {
+        player.body.velocity.x = -300;
+        player.animations.play('left');
+    }
+    else if (cursors.right.isDown)
+    {
+        player.body.moveRight(300);
+        player.animations.play('right');
+    }
+
+    if (cursors.up.isUp && cursors.down.isUp && cursors.left.isUp && cursors.right.isUp)
+    {
+                //  Stand still
+        player.animations.stop();
+
+        player.frame = 4;
+    }
+
+}
+
+function render() {
+
+    //game.debug.text("Arrows to move. Click to fade", 32, 32);
+    game.debug.text("11:45", 64, 64);
+}
+
+
+</script>
+</div>
+</body>
+</html>
